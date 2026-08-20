@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {"idx":0,"version":"5","when":1786732709640,"tag":"0000_eminent_jasper_sitwell","breakpoints":true},
+    {"idx":1,"version":"5","when":1786732890800,"tag":"0001_lethal_young_avengers","breakpoints":true},
+    {"idx":2,"version":"5","when":1786735038974,"tag":"0002_workable_christian_walker","breakpoints":true},
+    {"idx":3,"version":"5","when":1786735921796,"tag":"0003_overrated_thunderball","breakpoints":true},
+    {"idx":4,"version":"5","when":1786737286896,"tag":"0004_minor_the_liberteens","breakpoints":true},
+    {"idx":5,"version":"5","when":1786738838095,"tag":"0005_loud_landau","breakpoints":true},
+    {"idx":6,"version":"5","when":1786741452332,"tag":"0006_remarkable_bucky","breakpoints":true},
+    {"idx":7,"version":"5","when":1786742517887,"tag":"0007_colorful_bloodscream","breakpoints":true},
+    {"idx":8,"version":"5","when":1786742963404,"tag":"0008_mature_captain_flint","breakpoints":true},
+    {"idx":9,"version":"5","when":1786744000000,"tag":"0009_wonderful_midnight_sun","breakpoints":true},
+    {"idx":10,"version":"5","when":1786745000000,"tag":"0010_safe_moon_knight","breakpoints":true},
+    {"idx":11,"version":"5","when":1786746000000,"tag":"0011_account_center","breakpoints":true},
+    {"idx":12,"version":"5","when":1786747000000,"tag":"0012_sound_preference","breakpoints":true},
+    {"idx":13,"version":"5","when":1786748000000,"tag":"0013_account_safety_preferences","breakpoints":true},
+    {"idx":14,"version":"5","when":1786749000000,"tag":"0014_friend_requests","breakpoints":true},
+    {"idx":15,"version":"5","when":1786750000000,"tag":"0015_passkeys","breakpoints":true},
+    {"idx":16,"version":"5","when":1786751000000,"tag":"0016_message_enhancements","breakpoints":true},
+    {"idx":17,"version":"5","when":1786752000000,"tag":"0017_owner_verification_admin_audit","breakpoints":true},
+    {"idx":18,"version":"5","when":1786753000000,"tag":"0018_users_runtime_fields","breakpoints":true},
+    {"idx":19,"version":"5","when":1786754000000,"tag":"0019_live_stream_lifecycle","breakpoints":true},
+    {"idx":20,"version":"5","when":1786755000000,"tag":"0020_chat_group_read_state","breakpoints":true}
+  ]
+}

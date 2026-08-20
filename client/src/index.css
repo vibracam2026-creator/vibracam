@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
+  --color-vibra-950: oklch(0.12 0.055 312);
+  --color-vibra-900: oklch(0.17 0.075 315);
+  --color-vibra-800: oklch(0.23 0.105 315);
+  --color-vibra-700: oklch(0.33 0.16 315);
+  --color-vibra-pink: oklch(0.67 0.23 350);
+  --color-vibra-purple: oklch(0.6 0.22 305);
+}
+
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+html { min-height: 100%; max-width: 100%; overflow-x: hidden; background: #11071d; }
+body { margin: 0; min-height: 100vh; max-width: 100%; overflow-x: hidden; background: #11071d; color: #f8f5ff; font-family: "Cairo", sans-serif; }
+#root { min-width: 0; max-width: 100%; }
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+
+.vibra-bg {
+  background:
+    radial-gradient(circle at 14% 3%, rgba(213, 70, 209, .26), transparent 28rem),
+    radial-gradient(circle at 86% 18%, rgba(121, 64, 255, .23), transparent 25rem),
+    linear-gradient(145deg, #11071d 0%, #1c0b31 48%, #100719 100%);
+}
+.glass { background: rgba(35, 18, 58, .72); border: 1px solid rgba(233, 168, 255, .15); box-shadow: 0 20px 60px rgba(3, 0, 8, .28); backdrop-filter: blur(20px); }
+.gradient-text { background: linear-gradient(100deg, #f7b3ed, #ef5cac 48%, #b992ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.gradient-button { background: linear-gradient(100deg, #a54cf2, #ef4f9c); box-shadow: 0 12px 28px rgba(207, 59, 169, .28); transition: transform 160ms cubic-bezier(.23,1,.32,1), filter 160ms ease; }
+.gradient-button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.gradient-button:active { transform: scale(.97); }
+.soft-button { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.11); transition: background 160ms ease, transform 160ms ease; }
+.soft-button:hover { background: rgba(255,255,255,.11); }
+.soft-button:active { transform: scale(.97); }
+.page-shell { min-height: 100vh; max-width: 100%; overflow-x: hidden; }
+.mobile-bottom-nav { padding-bottom: calc(.25rem + env(safe-area-inset-bottom)); }
+@media (pointer: coarse) { button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; } }
+.thin-scrollbar::-webkit-scrollbar { width: 8px; }
+.thin-scrollbar::-webkit-scrollbar-thumb { background: rgba(238, 92, 177, .34); border-radius: 999px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+/* نظام الحركة العام: قصير وناعم، ولا يعتمد على مكتبات خارجية. */
+@keyframes vibra-page-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes vibra-card-in {
+  from { opacity: 0; transform: translateY(8px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes vibra-pop-in {
+  0% { opacity: 0; transform: scale(.82); }
+  70% { transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes vibra-drawer-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes vibra-badge-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(236, 72, 153, .28); }
+  50% { box-shadow: 0 0 0 6px rgba(236, 72, 153, 0); }
+}
+.route-enter { animation: vibra-page-in 420ms cubic-bezier(.22, 1, .36, 1) both; }
+.mobile-drawer-enter { animation: vibra-drawer-in 220ms cubic-bezier(.22, 1, .36, 1) both; }
+.motion-card { animation: vibra-card-in 480ms cubic-bezier(.22, 1, .36, 1) both; }
+.motion-pop { animation: vibra-pop-in 340ms cubic-bezier(.22, 1, .36, 1) both; }
+.notification-badge { animation: vibra-badge-pulse 1.8s ease-in-out infinite; }
+.glass { transition: transform 220ms cubic-bezier(.22, 1, .36, 1), border-color 220ms ease, box-shadow 220ms ease; }
+.glass:hover { border-color: rgba(233, 168, 255, .24); box-shadow: 0 24px 70px rgba(3, 0, 8, .34); }
+.gradient-button, .soft-button { will-change: transform; }
+.gradient-button:hover { box-shadow: 0 16px 34px rgba(207, 59, 169, .38); }
+.gradient-button:focus-visible, .soft-button:focus-visible, a:focus-visible { outline: 2px solid rgba(247, 179, 237, .9); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .route-enter, .mobile-drawer-enter, .motion-card, .motion-pop, .notification-badge { animation: none !important; }
+  .glass:hover { transform: none !important; }
+}
