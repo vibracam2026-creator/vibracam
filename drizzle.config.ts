@@ -24,6 +24,9 @@ export default defineConfig({
     user: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password),
     database: decodeURIComponent(url.pathname.replace(/^\//, "")),
-    ssl: sslMode === "required" ? {} : undefined,
+    ssl:
+      sslMode === "required"
+        ? { rejectUnauthorized: false }
+        : undefined,
   },
 });
