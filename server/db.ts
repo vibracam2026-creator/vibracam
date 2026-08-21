@@ -107,6 +107,13 @@ export async function upsertUser(user: InsertUser) {
   return getUserByOpenId(user.openId);
 }
 
+
+export async function ensureOwnerAdmin() {
+  const ownerEmail = (ENV.ownerEmail || "").trim().toLowerCase();
+  if (!ownerEmail) return;
+  const database = await requireDb();
+  await database.update(users).set({ role: "admin" }).where(sql`LOWER(${users.email}) = ${ownerEmail}`);
+}
 export async function getUserByOpenId(openId: string) {
   const db = await requireDb();
   return (await db.select().from(users).where(eq(users.openId, openId)).limit(1))[0];
@@ -270,7 +277,7 @@ export async function revokeAuthSessionByHash(sessionHash: string) {
   await db.update(authSessions).set({ revokedAt: new Date() }).where(and(eq(authSessions.sessionHash, sessionHash), isNull(authSessions.revokedAt)));
 }
 
-export async function createLocalAccount(input: { openId: string; name: string; firstName: string; lastName: string; username: string; email: string; passwordHash: string; dateOfBirth: string; country: string; city: string; timeZone?: string | null; defaultCurrency?: string | null }) {
+export async function createLocalAccount(input: { openId: string; name: string; firstName: string; lastName: string; username: string; email: string; passwordHash: string; dateOfBirth: string; country: string; city: string; timeZone?: string | null; defaultCurrency?: string | null; role?: "user" | "moderator" | "admin" }) {
   const db = await requireDb();
   const now = new Date();
   const userId = await db.transaction(async tx => {
@@ -287,6 +294,7 @@ export async function createLocalAccount(input: { openId: string; name: string; 
       city: input.city,
       timeZone: input.timeZone ?? null,
       defaultCurrency: input.defaultCurrency ?? "SAR",
+      role: input.role ?? "user",
       lastSignedIn: now,
     });
     const id = Number(createdUser[0].insertId);

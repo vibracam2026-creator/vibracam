@@ -58,57 +58,37 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
 };
 
 /**
- * Dispatches a project-owner notification through the Manus Notification Service.
+ * Dispatches a project-owner notification through the email provider.
  * Returns `true` if the request was accepted, `false` when the upstream service
  * cannot be reached (callers can fall back to email/slack). Validation errors
  * bubble up as TRPC errors so callers can fix the payload.
  */
-export async function notifyOwner(
-  payload: NotificationPayload
-): Promise<boolean> {
+export async function notifyOwner(payload: NotificationPayload): Promise<boolean> {
   const { title, content } = validatePayload(payload);
-
-  if (!ENV.forgeApiUrl) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service URL is not configured.",
-    });
-  }
-
-  if (!ENV.forgeApiKey) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service API key is not configured.",
-    });
-  }
-
-  const endpoint = buildEndpointUrl(ENV.forgeApiUrl);
+  if (!ENV.resendApiKey) return false;
 
   try {
-    const response = await fetch(endpoint, {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         accept: "application/json",
-        authorization: `Bearer ${ENV.forgeApiKey}`,
+        authorization: `Bearer ${ENV.resendApiKey}`,
         "content-type": "application/json",
-        "connect-protocol-version": "1",
       },
-      body: JSON.stringify({ title, content }),
+      body: JSON.stringify({
+        from: ENV.emailFrom,
+        to: [ENV.ownerEmail],
+        subject: title,
+        text: content,
+      }),
     });
-
     if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      console.warn(
-        `[Notification] Failed to notify owner (${response.status} ${response.statusText})${
-          detail ? `: ${detail}` : ""
-        }`
-      );
+      console.warn(`[Notification] Resend failed: ${response.status}`);
       return false;
     }
-
     return true;
   } catch (error) {
-    console.warn("[Notification] Error calling notification service:", error);
+    console.warn("[Notification] Email notification failed:", error);
     return false;
   }
 }

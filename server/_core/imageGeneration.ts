@@ -18,8 +18,8 @@
 import { storagePut } from "server/storage";
 import { ENV } from "./env";
 
-// Default model for generated sites. "MODEL_GPT_IMAGE_2" is the forge images.v1
-// enum for GPT Image 2 (id: gpt-image-2). If omitted, forge falls back to Gemini 2.5 Flash.
+// Default model for generated sites. "MODEL_GPT_IMAGE_2" is the OpenAI images.v1
+// enum for GPT Image 2 (id: gpt-image-2). If omitted, OpenAI falls back to Gemini 2.5 Flash.
 const DEFAULT_IMAGE_MODEL = "MODEL_GPT_IMAGE_2";
 const DEFAULT_IMAGE_QUALITY = "medium";
 
@@ -30,7 +30,7 @@ export type GenerateImageOptions = {
     b64Json?: string;
     mimeType?: string;
   }>;
-  /** Forge image model enum, e.g. "MODEL_GPT_IMAGE_2". Defaults to GPT Image 2. */
+  /** direct OpenAI image model enum, e.g. "MODEL_GPT_IMAGE_2". Defaults to GPT Image 2. */
   model?: string;
   /** Generation quality, e.g. "medium" | "high". Defaults to "medium" for GPT Image 2. */
   quality?: string;
@@ -43,21 +43,9 @@ export type GenerateImageResponse = {
 export async function generateImage(
   options: GenerateImageOptions
 ): Promise<GenerateImageResponse> {
-  if (!ENV.forgeApiUrl) {
-    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
-  }
-  if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
-  }
+  if (!ENV.openAiApiKey) throw new Error("OPENAI_API_KEY is not configured");
 
-  // Build the full URL by appending the service path to the base URL
-  const baseUrl = ENV.forgeApiUrl.endsWith("/")
-    ? ENV.forgeApiUrl
-    : `${ENV.forgeApiUrl}/`;
-  const fullUrl = new URL(
-    "images.v1.ImageService/GenerateImage",
-    baseUrl
-  ).toString();
+  const fullUrl = `${ENV.openAiBaseUrl}/images/generations`;
 
   const model = options.model ?? DEFAULT_IMAGE_MODEL;
   const quality =
@@ -68,13 +56,11 @@ export async function generateImage(
     headers: {
       accept: "application/json",
       "content-type": "application/json",
-      "connect-protocol-version": "1",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: `Bearer ${ENV.openAiApiKey}`,
     },
     body: JSON.stringify({
+      model: model === DEFAULT_IMAGE_MODEL ? "gpt-image-1" : model,
       prompt: options.prompt,
-      original_images: options.originalImages || [],
-      model,
       ...(quality ? { quality } : {}),
     }),
   });
@@ -86,20 +72,20 @@ export async function generateImage(
     );
   }
 
-  const result = (await response.json()) as {
-    image: {
-      b64Json: string;
-      mimeType: string;
-    };
-  };
-  const base64Data = result.image.b64Json;
-  const buffer = Buffer.from(base64Data, "base64");
+  const result = (await response.json()) as { data?: Array<{ b64_json?: string; url?: string }> };
+  const image = result.data?.[0];
+  if (!image) throw new Error("Image provider returned no image.");
+  let buffer: Buffer;
+  let mimeType = "image/png";
+  if (image.b64_json) buffer = Buffer.from(image.b64_json, "base64");
+  else if (image.url) { const imageResponse = await fetch(image.url); if (!imageResponse.ok) throw new Error("Unable to download generated image."); buffer = Buffer.from(await imageResponse.arrayBuffer()); }
+  else throw new Error("Image provider returned no image data.");
 
   // Save to S3
   const { url } = await storagePut(
     `generated/${Date.now()}.png`,
     buffer,
-    result.image.mimeType
+    mimeType
   );
   return {
     url,
@@ -107,7 +93,7 @@ export async function generateImage(
 }
 
 export type ImageModelInfo = {
-  /** Forge model enum, e.g. "MODEL_GPT_IMAGE_2". Pass into generateImage({ model }). */
+  /** direct OpenAI model enum, e.g. "MODEL_GPT_IMAGE_2". Pass into generateImage({ model }). */
   model?: string;
   /** Stable model id, e.g. "gpt-image-2". */
   id?: string;
@@ -122,39 +108,5 @@ export type ListImageModelsResponse = {
  * Feed a returned `model` value into generateImage({ model }).
  */
 export async function listImageModels(): Promise<ListImageModelsResponse> {
-  if (!ENV.forgeApiUrl) {
-    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
-  }
-  if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
-  }
-
-  const baseUrl = ENV.forgeApiUrl.endsWith("/")
-    ? ENV.forgeApiUrl
-    : `${ENV.forgeApiUrl}/`;
-  const fullUrl = new URL(
-    "images.v1.ImageService/ListModels",
-    baseUrl
-  ).toString();
-
-  const response = await fetch(fullUrl, {
-    method: "POST",
-    headers: {
-      accept: "application/json",
-      "content-type": "application/json",
-      "connect-protocol-version": "1",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
-    },
-    body: "{}",
-  });
-
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(
-      `List image models failed (${response.status} ${response.statusText})${detail ? `: ${detail}` : ""}`
-    );
-  }
-
-  const result = (await response.json()) as { models?: ImageModelInfo[] };
-  return { models: result.models ?? [] };
+  return { models: [{ model: DEFAULT_IMAGE_MODEL, id: "gpt-image-1" }] };
 }

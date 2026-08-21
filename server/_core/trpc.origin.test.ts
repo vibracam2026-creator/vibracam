@@ -7,13 +7,13 @@ describe("resolveRequestOrigin", () => {
     const req = {
       protocol: "http",
       headers: {
-        host: "vibracam-5ujb5uxx.manus.space",
+        host: "example.com",
         "x-forwarded-proto": "https",
       },
-      get: (name: string) => name === "host" ? "vibracam-5ujb5uxx.manus.space" : undefined,
+      get: (name: string) => name === "host" ? "example.com" : undefined,
     } as TrpcContext["req"];
 
-    expect(resolveRequestOrigin(req)).toBe("https://vibracam-5ujb5uxx.manus.space");
+    expect(resolveRequestOrigin(req)).toBe("https://example.com");
   });
 
   it("prefers the external host forwarded by the WebDev gateway over the internal service host", () => {
@@ -22,18 +22,18 @@ describe("resolveRequestOrigin", () => {
       headers: {
         host: "127.0.0.1:3000",
         "x-forwarded-proto": "https",
-        "x-forwarded-host": "vibracam-5ujb5uxx.manus.space",
+        "x-forwarded-host": "example.com",
       },
       get: (name: string) => name === "host" ? "127.0.0.1:3000" : undefined,
     } as TrpcContext["req"];
 
-    expect(resolveRequestOrigin(req)).toBe("https://vibracam-5ujb5uxx.manus.space");
+    expect(resolveRequestOrigin(req)).toBe("https://example.com");
   });
 
   it("trusts only HTTPS origins on managed WebDev domains", () => {
-    expect(isTrustedWebDevOrigin("https://vibracam-5ujb5uxx.manus.space")).toBe(true);
-    expect(isTrustedWebDevOrigin("https://3000-example.manus.computer")).toBe(true);
-    expect(isTrustedWebDevOrigin("http://vibracam-5ujb5uxx.manus.space")).toBe(false);
+    expect(isTrustedWebDevOrigin("https://example.com")).toBe(true);
+    expect(isTrustedWebDevOrigin("https://untrusted.example.com")).toBe(false);
+    expect(isTrustedWebDevOrigin("http://example.com")).toBe(false);
     expect(isTrustedWebDevOrigin("https://example.com")).toBe(false);
   });
 });

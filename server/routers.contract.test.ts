@@ -18,7 +18,7 @@ describe("عقود منصة VibraCam", () => {
       name: "مستخدم اختبار",
       username: "tester",
       email: null,
-      loginMethod: "manus",
+      loginMethod: "email",
       avatarUrl: null,
       avatarKey: null,
       bio: null,

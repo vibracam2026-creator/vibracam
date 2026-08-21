@@ -23,7 +23,7 @@ describe("authenticateStorageRequest", () => {
   it("يقبل جلسة الدخول المحلية لعرض وسائط مالك الحساب", async () => {
     mocks.getActiveAuthSession.mockResolvedValue({ userId: 150003 });
     mocks.getUserById.mockResolvedValue({ id: 150003, role: "admin", openId: "local-150003" });
-    mocks.authenticateRequest.mockRejectedValue(new Error("لا توجد جلسة Manus"));
+    mocks.authenticateRequest.mockRejectedValue(new Error("لا توجد جلسة محلية"));
 
     const viewer = await authenticateStorageRequest({ headers: { cookie: "app_session_id=local-session-token" } } as any);
 

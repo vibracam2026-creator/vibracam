@@ -1,10 +1,14 @@
 import type { Express, Request } from "express";
-import { Readable } from "node:stream";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { createReadStream } from "node:fs";
+import { stat } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { COOKIE_NAME } from "@shared/const";
 import * as db from "../db";
 import { hashSessionToken, readCookie } from "../sessionSecurity";
 import { ENV } from "./env";
 import { sdk } from "./sdk";
+import { getS3Client, getStorageContentType } from "../storage";
 
 export async function authenticateStorageRequest(req: Request) {
   const token = readCookie(req.headers.cookie, COOKIE_NAME);
@@ -13,7 +17,6 @@ export async function authenticateStorageRequest(req: Request) {
     const localUser = await db.getUserById(session.userId);
     if (localUser) return localUser;
   }
-
   try {
     const user = await sdk.authenticateRequest(req);
     if (user.openId.startsWith("cron_")) return null;
@@ -24,21 +27,24 @@ export async function authenticateStorageRequest(req: Request) {
 }
 
 export function normalizeStorageKey(rawKey: string | string[] | undefined) {
-  return (Array.isArray(rawKey) ? rawKey.join("/") : rawKey || "").replace(/^\/+/, "");
+  const key = Array.isArray(rawKey) ? rawKey.join("/") : rawKey || "";
+  return key.replace(/^\/+/, "").replace(/\\/g, "/");
+}
+
+function isSafeKey(key: string) {
+  return Boolean(key) && !key.split("/").some(part => part === "..");
 }
 
 export function registerStorageProxy(app: Express) {
-  app.get("/manus-storage/{*key}", async (req, res) => {
+  app.get("/storage/{*key}", async (req, res) => {
     const rawKey = (req.params as Record<string, string | string[]>).key;
     const key = normalizeStorageKey(rawKey);
-    if (!key) {
-      res.status(400).send("Missing storage key");
+    if (!isSafeKey(key)) {
+      res.status(400).send("Invalid storage key");
       return;
     }
 
-    const publicBrandingKeys = new Set(["vibracam-official-logo_8af5745c.png", "vibracam-official-logo_2c86ffe7.webp", "vibracam-official-logo_458871da.webp"]);
-    const isPublicAsset = publicBrandingKeys.has(key) || /^vibracam\/\d+\/(avatar|cover)\//.test(key);
-    
+    const isPublicAsset = /^vibracam\/\d+\/(avatar|cover)\//.test(key) || key.startsWith("public/");
     if (!isPublicAsset) {
       const viewer = await authenticateStorageRequest(req);
       if (!viewer) {
@@ -52,81 +58,41 @@ export function registerStorageProxy(app: Express) {
       }
     }
 
-    if (process.env.LOCAL_STORAGE_DIR) {
+    const s3 = getS3Client();
+    if (s3) {
       try {
-        const { join } = await import("node:path");
-        const { createReadStream } = await import("node:fs");
-        const { stat } = await import("node:fs/promises");
-        const { getStorageContentType } = await import("../storage");
-        
-        const filePath = join(process.env.LOCAL_STORAGE_DIR, key);
-        // Security check: ensure path is within LOCAL_STORAGE_DIR
-        if (!filePath.startsWith(process.env.LOCAL_STORAGE_DIR)) {
-          res.status(403).send("Invalid path");
-          return;
-        }
-        
-        const fileStat = await stat(filePath).catch(() => null);
-        if (!fileStat) {
-          res.status(404).send("File not found");
-          return;
-        }
-        
-        res.set("Content-Type", getStorageContentType(key));
-        res.set("Content-Length", fileStat.size.toString());
-        res.set("Cache-Control", "private, max-age=31536000");
-        
-        const stream = createReadStream(filePath);
+        const object = await s3.send(new GetObjectCommand({ Bucket: ENV.s3Bucket, Key: key }));
+        res.set("Content-Type", object.ContentType || getStorageContentType(key));
+        if (object.ContentLength != null) res.set("Content-Length", String(object.ContentLength));
+        res.set("Cache-Control", isPublicAsset ? "public, max-age=31536000, immutable" : "private, no-store");
+        if (!object.Body) return res.status(404).send("File not found");
+        const stream = object.Body as NodeJS.ReadableStream;
         stream.on("error", () => res.destroy());
         stream.pipe(res);
         return;
-      } catch (err) {
-        console.error("[StorageProxy] local storage error:", err);
-        res.status(500).send("Local storage error");
+      } catch (error: any) {
+        const status = error?.name === "NoSuchKey" ? 404 : 502;
+        res.status(status).send(status === 404 ? "File not found" : "Storage backend error");
         return;
       }
     }
 
-    if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-      res.status(503).send("Managed storage is unavailable");
+    const root = resolve(process.env.LOCAL_STORAGE_DIR || "./data/storage");
+    const filePath = resolve(join(root, key));
+    if (!filePath.startsWith(`${root}/`) && filePath !== root) {
+      res.status(403).send("Invalid path");
       return;
     }
-
-    try {
-      const forgeUrl = new URL("v1/storage/presign/get", ENV.forgeApiUrl.replace(/\/+$/, "") + "/");
-      forgeUrl.searchParams.set("path", key);
-      const forgeResp = await fetch(forgeUrl, { headers: { Authorization: `Bearer ${ENV.forgeApiKey}` } });
-      if (!forgeResp.ok) {
-        const body = await forgeResp.text().catch(() => "");
-        console.error(`[StorageProxy] forge error: ${forgeResp.status} ${body}`);
-        res.status(502).send("Storage backend error");
-        return;
-      }
-      const { url } = (await forgeResp.json()) as { url: string };
-      if (!url) {
-        res.status(502).send("Empty signed URL from backend");
-        return;
-      }
-      const shouldStreamToBrowser = isPublicAsset;
-      if (shouldStreamToBrowser) {
-        const assetResp = await fetch(url);
-        if (!assetResp.ok || !assetResp.body) {
-          res.status(502).send("Storage asset is unavailable");
-          return;
-        }
-        const contentType = assetResp.headers.get("content-type");
-        if (contentType) res.set("Content-Type", contentType);
-        const contentLength = assetResp.headers.get("content-length");
-        if (contentLength) res.set("Content-Length", contentLength);
-        res.set("Cache-Control", "private, no-store");
-        Readable.fromWeb(assetResp.body as never).on("error", () => res.destroy()).pipe(res);
-        return;
-      }
-      res.set("Cache-Control", "private, no-store");
-      res.redirect(307, url);
-    } catch (err) {
-      console.error("[StorageProxy] failed:", err);
-      res.status(502).send("Storage proxy error");
+    const fileStat = await stat(filePath).catch(() => null);
+    if (!fileStat) {
+      res.status(404).send("File not found");
+      return;
     }
+    res.set("Content-Type", getStorageContentType(key));
+    res.set("Content-Length", String(fileStat.size));
+    res.set("Cache-Control", isPublicAsset ? "public, max-age=31536000, immutable" : "private, no-store");
+    const stream = createReadStream(filePath);
+    stream.on("error", () => res.destroy());
+    stream.pipe(res);
   });
 }

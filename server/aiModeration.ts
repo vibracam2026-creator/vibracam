@@ -5,7 +5,7 @@ import type { InvokeResult } from "./_core/llm";
  * منظومة أمان بالذكاء الاصطناعي لمنصة VibraCam.
  * تتضمن: فحص المحتوى النصي (كشف الإباحية والمحتوى المحظور)، ومعالجة البلاغات تلقائيًا،
  * والتحقق العمري. تعمل عبر نموذج LLM بإخراج منظم JSON schema، مع مسار بديل عبر
- * OpenAI API المباشر إذا لم تكن مفاتيح منصة Manus متوفرة (بيئة التطوير المحلية).
+ * OpenAI API المباشر إذا لم تكن مفاتيح OpenAI متوفرة (بيئة التطوير المحلية).
  */
 
 export type ContentVerdict = "safe" | "sexual" | "nsfw" | "harmful";
@@ -89,18 +89,9 @@ const MODERATION_SYSTEM_PROMPT = `أنت مُشرف محتوى ذكي لمنصة
 
 /** بناء عنوان API ومفتاحه مع دعم المسار البديل (بيئة التطوير) */
 function resolveApi(): { url: string; apiKey: string } {
-  if (ENV.forgeApiKey && ENV.forgeApiKey.trim().length > 0) {
-    return {
-      url: `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`,
-      apiKey: ENV.forgeApiKey,
-    };
-  }
-  // مسار بديل: OpenAI API مباشر عند توفر مفتاحه في .env (بيئة التطوير المحلية)
-  const openaiKey = process.env.OPENAI_API_KEY ?? "";
-  const openaiBase = process.env.OPENAI_API_BASE ?? "https://api.openai.com/v1";
   return {
-    url: `${openaiBase.replace(/\/$/, "")}/chat/completions`,
-    apiKey: openaiKey,
+    url: `${ENV.openAiBaseUrl}/chat/completions`,
+    apiKey: ENV.openAiApiKey,
   };
 }
 

@@ -58,6 +58,7 @@ export async function registerLocalAccount(input: LocalRegistration) {
     city: input.city.trim(),
     timeZone: input.timeZone ?? null,
     defaultCurrency: input.defaultCurrency ?? "SAR",
+    role: email === (process.env.OWNER_EMAIL ?? "vibracam.2026@gmail.com").trim().toLowerCase() ? "admin" : "user",
   });
   if (!user) throw new Error("تعذر إنشاء الحساب.");
   return user;

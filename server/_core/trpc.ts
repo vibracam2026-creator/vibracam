@@ -12,8 +12,12 @@ export const publicProcedure = t.procedure;
 
 export function isTrustedWebDevOrigin(value: string) {
   try {
-    const parsed = new URL(value);
-    return parsed.protocol === "https:" && (parsed.hostname.endsWith(".manus.space") || parsed.hostname.endsWith(".manus.computer"));
+    const origin = new URL(value).origin;
+    return [process.env.PUBLIC_URL, process.env.CLIENT_URL]
+      .filter(Boolean)
+      .some(item => {
+        try { return new URL(item as string).origin === origin; } catch { return false; }
+      });
   } catch {
     return false;
   }

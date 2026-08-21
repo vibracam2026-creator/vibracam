@@ -59,7 +59,7 @@ describe("live.sendChat", () => {
   });
 
   it("يحفظ رابط الصورة والغلاف الجديدين فور اكتمال الرفع", async () => {
-    const media = { avatarUrl: "/manus-storage/vibracam/150003/avatar/new-image.webp", avatarKey: "vibracam/150003/avatar/new-image.webp", coverUrl: "/manus-storage/vibracam/150003/cover/new-cover.webp", coverKey: "vibracam/150003/cover/new-cover.webp" };
+    const media = { avatarUrl: "/storage/vibracam/150003/avatar/new-image.webp", avatarKey: "vibracam/150003/avatar/new-image.webp", coverUrl: "/storage/vibracam/150003/cover/new-cover.webp", coverKey: "vibracam/150003/cover/new-cover.webp" };
     mocks.updateProfile.mockResolvedValue({ id: user.id, ...media });
 
     await expect(appRouter.createCaller(ctx).profile.update(media)).resolves.toEqual({ id: user.id, ...media });

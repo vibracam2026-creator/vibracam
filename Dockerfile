@@ -26,10 +26,9 @@ RUN corepack pnpm run build
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=3000
 
-# Expose port
-EXPOSE 3000
+# Render provides the PORT environment variable at runtime
+EXPOSE 10000
 
-# Start the application
-CMD ["node", "dist/index.js"]
+# Run database migrations, then start the application
+CMD ["sh", "-c", "corepack pnpm db:migrate && node dist/index.js"]

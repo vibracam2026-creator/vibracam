@@ -441,7 +441,7 @@ export const supplementalTranslations: Record<string, Record<string, string>> = 
     "startYourSpace": "Start your space",
     "forgotPassword": "Forgot password?",
     "privacyHint": "Birthdate and location — if added — are private and not shown to visitors.",
-    "continueVia": "Continue via Manus",
+    "continueVia": "Continue",
     "firstNamePlaceholder": "Example: Ahmed",
     "lastNamePlaceholder": "Example: Ali",
     "usernamePlaceholder": "Example: ahmed_vibra",

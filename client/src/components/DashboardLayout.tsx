@@ -65,7 +65,7 @@ export default function DashboardLayout({
               Sign in to continue
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              Access to this dashboard requires authentication. Sign in with your VibraCam account.
             </p>
           </div>
           <Button

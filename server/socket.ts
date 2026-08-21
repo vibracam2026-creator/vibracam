@@ -135,8 +135,10 @@ export function initializeSocket(server: HttpServer) {
     try {
       const parsed = new URL(origin);
       const isLocal = parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname);
-      const isManaged = parsed.protocol === "https:" && (parsed.hostname.endsWith(".manus.space") || parsed.hostname.endsWith(".manus.computer"));
-      return isLocal || isManaged;
+      const configured = [process.env.PUBLIC_URL, process.env.CLIENT_URL].filter(Boolean).some(value => {
+        try { return new URL(value as string).origin === parsed.origin; } catch { return false; }
+      });
+      return isLocal || configured;
     } catch {
       return false;
     }
