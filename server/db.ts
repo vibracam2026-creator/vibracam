@@ -73,20 +73,31 @@ let database: ReturnType<typeof drizzle> | null = null;
 function createDatabase() {
   const url = new URL(ENV.databaseUrl);
   const sslMode = url.searchParams.get("ssl-mode")?.toLowerCase();
+
   url.searchParams.delete("ssl-mode");
+
   const pool = mysql.createPool({
     host: url.hostname,
     port: url.port ? Number(url.port) : 3306,
     user: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password),
     database: decodeURIComponent(url.pathname.replace(/^\//, "")),
-    ssl: sslMode === "required" ? {} : undefined,
+
+    // Render / MySQL may use a certificate chain that is not trusted
+    // by Node's default CA store.
+    ssl:
+      sslMode === "required"
+        ? {
+            rejectUnauthorized: false,
+          }
+        : undefined,
+
     waitForConnections: true,
     connectionLimit: 10,
   });
+
   return drizzle(pool);
 }
-
 export async function getDb() {
   if (!database && ENV.databaseUrl) database = createDatabase();
   return database;
