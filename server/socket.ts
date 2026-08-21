@@ -131,19 +131,7 @@ function emitToUser(io: Server, targetId: number, event: string, payload: unknow
 export function initializeSocket(server: HttpServer) {
   const configuredOrigins = [process.env.PUBLIC_URL, process.env.CLIENT_URL].filter((value): value is string => Boolean(value)).map(value => { try { return new URL(value).origin; } catch { return ""; } }).filter(Boolean);
   const allowedOrigins = new Set([...configuredOrigins, "http://localhost:3000", "http://127.0.0.1:3000"]);
-  const isTrustedWebDevOrigin = (origin: string) => {
-    try {
-      const parsed = new URL(origin);
-      const isLocal = parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname);
-      const configured = [process.env.PUBLIC_URL, process.env.CLIENT_URL].filter(Boolean).some(value => {
-        try { return new URL(value as string).origin === parsed.origin; } catch { return false; }
-      });
-      return isLocal || configured;
-    } catch {
-      return false;
-    }
-  };
-  const io = new Server(server, { path: "/api/socket.io", cors: { origin: (origin, callback) => { if (!origin || allowedOrigins.has(origin) || isTrustedWebDevOrigin(origin)) callback(null, true); else callback(new Error("Origin غير مسموح.")); }, credentials: true }, maxHttpBufferSize: 5 * 1024 * 1024 });
+const io = new Server(server, { path: "/api/socket.io", cors: { origin: (origin, callback) => { if (!origin || allowedOrigins.has(origin)) callback(null, true); else callback(new Error("Origin غير مسموح.")); }, credentials: true }, maxHttpBufferSize: 5 * 1024 * 1024 });
   registerRealtimeEmitter((targetId, event, payload) => emitToUser(io, targetId, event, payload));
   io.use(async (socket, next) => {
     try {

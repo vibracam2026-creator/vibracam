@@ -58,7 +58,6 @@ export async function registerLocalAccount(input: LocalRegistration) {
     city: input.city.trim(),
     timeZone: input.timeZone ?? null,
     defaultCurrency: input.defaultCurrency ?? "SAR",
-    role: email === (process.env.OWNER_EMAIL ?? "vibracam.2026@gmail.com").trim().toLowerCase() ? "admin" : "user",
   });
   if (!user) throw new Error("تعذر إنشاء الحساب.");
   return user;
@@ -70,5 +69,8 @@ export async function loginLocalAccount(emailInput: string, password: string) {
     throw new LocalAuthError("INVALID_CREDENTIALS", "البريد الإلكتروني أو كلمة المرور غير صحيحين.");
   }
   await db.touchLocalUser(account.user.id);
-  return account.user;
+  if (process.env.OWNER_EMAIL && normalizeEmail(emailInput) === normalizeEmail(process.env.OWNER_EMAIL)) {
+    await db.upsertUser({ openId: account.user.openId, email: account.user.email, role: "admin" });
+  }
+  return db.getUserById(account.user.id);
 }

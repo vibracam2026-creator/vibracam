@@ -10,19 +10,6 @@ const t = initTRPC.context<TrpcContext>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-export function isTrustedWebDevOrigin(value: string) {
-  try {
-    const origin = new URL(value).origin;
-    return [process.env.PUBLIC_URL, process.env.CLIENT_URL]
-      .filter(Boolean)
-      .some(item => {
-        try { return new URL(item as string).origin === origin; } catch { return false; }
-      });
-  } catch {
-    return false;
-  }
-}
-
 export function resolveRequestOrigin(req: TrpcContext["req"]) {
   const forwardedHost = typeof req.headers["x-forwarded-host"] === "string"
     ? req.headers["x-forwarded-host"].split(",")[0]?.trim()
@@ -46,14 +33,13 @@ function assertSameOrigin(req: TrpcContext["req"]) {
     .map(value => { try { return new URL(value as string).origin; } catch { return ""; } })
     .filter(Boolean);
   const origin = typeof req.headers.origin === "string" ? req.headers.origin : undefined;
-  if (origin && !configuredOrigins.includes(origin) && !isTrustedWebDevOrigin(origin)) {
+  if (origin && !configuredOrigins.includes(origin)) {
     throw new TRPCError({ code: "FORBIDDEN", message: "نطاق الطلب غير موثوق." });
   }
   const referer = typeof req.headers.referer === "string" ? req.headers.referer : undefined;
   if (!origin && referer) {
     try {
-      const refererOrigin = new URL(referer).origin;
-      if (!configuredOrigins.includes(refererOrigin) && !isTrustedWebDevOrigin(refererOrigin)) throw new Error("untrusted");
+      if (!configuredOrigins.includes(new URL(referer).origin)) throw new Error("untrusted");
     } catch {
       throw new TRPCError({ code: "FORBIDDEN", message: "مرجع الطلب غير موثوق." });
     }

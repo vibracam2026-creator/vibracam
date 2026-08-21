@@ -1,9 +1,6 @@
 export const APP_TITLE = "VibraCam";
 
-/** Local authentication entry point. Kept under the old name for compatibility. */
+/** Local authentication entry point. No external identity provider is used. */
 export function startLogin() {
-  if (typeof window === "undefined") return;
-  if (window.location.pathname !== "/login") {
-    window.location.assign("/login");
-  }
+  if (typeof window !== "undefined") window.location.assign("/login");
 }

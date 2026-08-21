@@ -62,7 +62,7 @@ function Router() {
     <Route path="/parental-consent" component={() => <Protected><ParentalConsent/></Protected>}/>
     <Route path="/parental-approve" component={ParentalApprovePage}/>
     <Route path="/feed" component={() => <Protected><Feed/></Protected>}/>
-    <Route path="/discover" component={() => <Protected><Discover/></Protected>}/>
+    <Route path="/discover" component={Discover}/>
     <Route path="/profile/:id" component={() => <Protected><Profile/></Protected>}/>
     <Route path="/messages/groups" component={() => <Protected><ChatGroups/></Protected>}/>
     <Route path="/messages/groups/:id" component={() => <Protected><ChatGroupConversation/></Protected>}/>
@@ -72,7 +72,7 @@ function Router() {
     <Route path="/friend-requests" component={() => <Protected><FriendRequests/></Protected>}/>
     <Route path="/stories" component={() => <Protected><Stories/></Protected>}/>
     <Route path="/reels" component={() => <Protected><Reels/></Protected>}/>
-    <Route path="/marketplace" component={() => <Protected><Marketplace/></Protected>}/>
+    <Route path="/marketplace" component={Marketplace}/>
     <Route path="/account-center" component={() => <Protected><AccountCenter/></Protected>}/>
     <Route path="/settings" component={() => <Protected><Settings/></Protected>}/>
     <Route path="/settings/sessions" component={() => <Protected><SecuritySessions/></Protected>}/>
@@ -81,9 +81,9 @@ function Router() {
     <Route path="/groups/:id" component={GroupDetail}/>
     <Route path="/video/:peerId" component={() => <Protected><VideoCall/></Protected>}/>
     <Route path="/random-call" component={() => <Protected><RandomCall/></Protected>}/>
-    <Route path="/live" component={() => <Protected><LiveList/></Protected>}/>
+    <Route path="/live" component={LiveList}/>
     <Route path="/live/broadcast" component={() => <Protected><LiveBroadcast/></Protected>}/>
-    <Route path="/live/:id" component={() => <Protected><LiveWatch/></Protected>}/>
+    <Route path="/live/:id" component={LiveWatch}/>
     <Route path="/channels" component={() => <Protected><Channels/></Protected>}/>
     <Route path="/spaces" component={() => <Protected><Spaces/></Protected>}/>
     <Route component={NotFound}/>

@@ -5,7 +5,7 @@ import type { InvokeResult } from "./_core/llm";
  * منظومة أمان بالذكاء الاصطناعي لمنصة VibraCam.
  * تتضمن: فحص المحتوى النصي (كشف الإباحية والمحتوى المحظور)، ومعالجة البلاغات تلقائيًا،
  * والتحقق العمري. تعمل عبر نموذج LLM بإخراج منظم JSON schema، مع مسار بديل عبر
- * OpenAI API المباشر إذا لم تكن مفاتيح OpenAI متوفرة (بيئة التطوير المحلية).
+ * OpenAI API المباشر باستخدام واجهة OpenAI المتوافقة.
  */
 
 export type ContentVerdict = "safe" | "sexual" | "nsfw" | "harmful";

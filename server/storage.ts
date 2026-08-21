@@ -1,14 +1,29 @@
 import { randomUUID } from "node:crypto";
-import { extname, join, resolve } from "node:path";
-import { mkdir, writeFile } from "node:fs/promises";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { extname } from "node:path";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ENV } from "./_core/env";
 
+let clientCache: S3Client | null | undefined;
+
 function getS3Client() {
-  if (!ENV.s3Bucket || !ENV.s3AccessKeyId || !ENV.s3SecretAccessKey) return null;
-  return new S3Client({
-    region: ENV.s3Region,
+  if (clientCache !== undefined) return clientCache;
+
+  if (
+    !ENV.s3Bucket ||
+    !ENV.s3AccessKeyId ||
+    !ENV.s3SecretAccessKey
+  ) {
+    clientCache = null;
+    return clientCache;
+  }
+
+  clientCache = new S3Client({
+    region: ENV.s3Region || "auto",
     endpoint: ENV.s3Endpoint || undefined,
     forcePathStyle: Boolean(ENV.s3Endpoint),
     credentials: {
@@ -16,32 +31,48 @@ function getS3Client() {
       secretAccessKey: ENV.s3SecretAccessKey,
     },
   });
+
+  return clientCache;
 }
 
 export function isStorageConfigured() {
-  return Boolean(
-    process.env.LOCAL_STORAGE_DIR ||
-    getS3Client()
-  );
+  return Boolean(getS3Client() && ENV.s3Bucket);
 }
 
-function normalizeKey(relKey: string): string {
-  return relKey.replace(/^\/+/, "").replace(/\\/g, "/").replace(/\.\.(?:\/|$)/g, "");
+function normalizeKey(relKey: string) {
+  const key = relKey.replace(/^\/+/, "").replace(/\\/g, "/");
+  if (!key || key.includes("..")) {
+    throw new Error("Invalid storage key.");
+  }
+  return key;
 }
 
-function appendHashSuffix(relKey: string): string {
+function appendHashSuffix(relKey: string) {
   const hash = randomUUID().replace(/-/g, "").slice(0, 8);
   const lastDot = relKey.lastIndexOf(".");
-  if (lastDot === -1) return `${relKey}_${hash}`;
-  return `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
+  return lastDot === -1
+    ? `${relKey}_${hash}`
+    : `${relKey.slice(0, lastDot)}_${hash}${relKey.slice(lastDot)}`;
 }
 
-function localRoot() {
-  return resolve(process.env.LOCAL_STORAGE_DIR || "./data/storage");
+function publicUrl(key: string) {
+  if (ENV.s3PublicBaseUrl) {
+    return `${ENV.s3PublicBaseUrl.replace(/\/+$/, "")}/${key}`;
+  }
+
+  return `/storage/${encodeURIComponent(key).replace(/%2F/g, "/")}`;
 }
 
-function localUrl(key: string) {
-  return `/storage/${encodeURI(key).replace(/#/g, "%23")}`;
+function requireStorage() {
+  const client = getS3Client();
+
+  if (!client || !ENV.s3Bucket) {
+    throw new Error(
+      "S3-compatible storage is not configured. Set S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY.",
+    );
+  }
+
+  return client;
 }
 
 export async function storagePut(
@@ -50,56 +81,61 @@ export async function storagePut(
   contentType = "application/octet-stream",
 ): Promise<{ key: string; url: string }> {
   const key = appendHashSuffix(normalizeKey(relKey));
-  const s3 = getS3Client();
+  const client = requireStorage();
 
-  if (s3) {
-    await s3.send(new PutObjectCommand({
+  await client.send(
+    new PutObjectCommand({
       Bucket: ENV.s3Bucket,
       Key: key,
-      Body: typeof data === "string" ? Buffer.from(data) : Buffer.from(data),
+      Body: typeof data === "string" ? Buffer.from(data) : data,
       ContentType: contentType,
-    }));
-    return {
-      key,
-      url: ENV.s3PublicBaseUrl
-        ? `${ENV.s3PublicBaseUrl.replace(/\/+$/, "")}/${encodeURI(key)}`
-        : localUrl(key),
-    };
-  }
+      CacheControl: "public, max-age=31536000, immutable",
+    }),
+  );
 
-  const root = localRoot();
-  const filePath = resolve(root, key);
-  if (!filePath.startsWith(`${root}/`) && filePath !== root) throw new Error("Invalid storage path");
-  await mkdir(join(filePath, ".."), { recursive: true });
-  await writeFile(filePath, typeof data === "string" ? data : Buffer.from(data));
-  return { key, url: localUrl(key) };
+  return { key, url: publicUrl(key) };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+export async function storageGet(relKey: string) {
   const key = normalizeKey(relKey);
-  return { key, url: ENV.s3PublicBaseUrl ? `${ENV.s3PublicBaseUrl.replace(/\/+$/, "")}/${encodeURI(key)}` : localUrl(key) };
+  return { key, url: publicUrl(key) };
 }
 
-export async function storageGetSignedUrl(relKey: string): Promise<string> {
+export async function storageGetSignedUrl(
+  relKey: string,
+  expiresIn = 900,
+) {
   const key = normalizeKey(relKey);
-  if (ENV.s3PublicBaseUrl) return `${ENV.s3PublicBaseUrl.replace(/\/+$/, "")}/${encodeURI(key)}`;
-  const s3 = getS3Client();
-  if (s3) {
-    return getSignedUrl(s3, new GetObjectCommand({ Bucket: ENV.s3Bucket, Key: key }), { expiresIn: 3600 });
-  }
-  return localUrl(key);
+  const client = requireStorage();
+
+  return getSignedUrl(
+    client,
+    new GetObjectCommand({
+      Bucket: ENV.s3Bucket,
+      Key: key,
+    }),
+    { expiresIn },
+  );
 }
 
 export function getStorageContentType(relKey: string) {
   const extension = extname(relKey).toLowerCase();
+
   const types: Record<string, string> = {
-    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
-    ".webp": "image/webp", ".gif": "image/gif", ".svg": "image/svg+xml",
-    ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
-    ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
+    ".svg": "image/svg+xml",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+    ".mp4": "video/mp4",
+    ".mov": "video/quicktime",
+    ".webm": "video/webm",
+    ".mp3": "audio/mpeg",
+    ".wav": "audio/wav",
+    ".ogg": "audio/ogg",
     ".pdf": "application/pdf",
   };
+
   return types[extension] || "application/octet-stream";
 }
-
-export { getS3Client };

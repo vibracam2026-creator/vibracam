@@ -212,13 +212,10 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  `${ENV.openAiBaseUrl}/chat/completions`;
+const resolveApiUrl = () => `${ENV.openAiBaseUrl}/chat/completions`;
 
 const assertApiKey = () => {
-  if (!ENV.openAiApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
-  }
+  if (!ENV.openAiApiKey) throw new Error("OPENAI_API_KEY is not configured");
 };
 
 const normalizeResponseFormat = ({

@@ -49,6 +49,7 @@ function hasValidFileSignature(bytes: Buffer, mimeType: string) {
   if (mimeType === "image/jpeg") return hex.startsWith("ffd8ff");
   if (mimeType === "image/gif") return ascii.startsWith("GIF8");
   if (mimeType === "image/webp") return ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WEBP";
+  if (mimeType === "image/svg+xml") return /^<svg[\s>]/i.test(bytes.subarray(0, 512).toString("utf8").trim());
   if (mimeType === "video/mp4" || mimeType === "video/quicktime") return ascii.slice(4, 8) === "ftyp";
   if (mimeType === "video/webm" || mimeType === "audio/webm") return hex.startsWith("1a45dfa3");
   if (mimeType === "audio/mpeg") return ascii.startsWith("ID3") || hex.startsWith("fffb") || hex.startsWith("fff3");

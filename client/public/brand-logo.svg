@@ -1,7 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
-<title>VibraCam</title>
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs>
-<rect x="8" y="8" width="240" height="240" rx="64" fill="url(#g)"/>
-<path d="M58 86h27l28 55 28-55h27l-42 84h-26L58 86z" fill="white"/>
-<circle cx="190" cy="67" r="15" fill="white" opacity=".92"/>
+  <title>VibraCam</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c3aed"/>
+      <stop offset="1" stop-color="#ec4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="64" fill="url(#g)"/>
+  <path d="M55 68h38l35 83 35-83h38l-54 120h-38L55 68Z" fill="white"/>
 </svg>
