@@ -44,30 +44,3 @@ Start:
 `corepack pnpm run db:migrate && corepack pnpm run start`
 
 يجب ضبط المتغيرات في Render، ولا تُرفع الأسرار إلى GitHub.
-
-
-## إعداد Render النهائي
-
-اضبط هذه المتغيرات في Render من صفحة Environment:
-- `NODE_ENV=production`
-- `PORT=10000`
-- `PUBLIC_URL=https://vibracam.com`
-- `CLIENT_URL=https://vibracam.com`
-- `DATABASE_URL` من Aiven (استخدم رابط الاتصال الحالي، ولا تستخدم كلمة مرور قديمة).
-- `JWT_SECRET` عشوائي بطول 64 حرفًا أو أكثر.
-- `OWNER_EMAIL=vibracam.2026@gmail.com`
-- متغيرات S3 الحقيقية.
-
-لا تضع `DATABASE_URL` أو `JWT_SECRET` أو مفاتيح S3 في GitHub.
-
-### قاعدة Aiven الموجودة
-
-لا تنشئ قاعدة جديدة إذا كانت بيانات VibraCam الحالية موجودة في Aiven. استخدم رابط الاتصال الحالي من Aiven في `DATABASE_URL`. الـ schema والمigrations الموجودة في `drizzle/` هي التي تُطبّق على القاعدة الحالية.
-
-### إذا ظهر `Access denied for user 'avnadmin'`
-
-هذا يعني أن بيانات `DATABASE_URL` في Render غير صحيحة أو قديمة. انسخ Connection String الحالي من Aiven وأعد حفظ `DATABASE_URL` في Render، ثم أعد النشر.
-
-### إذا ظهر `"" is not a function` بعد نجاح migrations
-
-أعد النشر باستخدام **Clear build cache & deploy** في Render، لأن هذا الخطأ ظهر في سياق build cached سابق. النسخة الحالية تربط الخادم مباشرة بالمنفذ `PORT` بدل البحث عن منفذ بديل، وتستخدم `exec node dist/index.js` بعد نجاح migration.

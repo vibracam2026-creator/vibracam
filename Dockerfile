@@ -21,4 +21,4 @@ ENV PORT=10000
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "corepack pnpm db:migrate && exec node dist/index.js"]
+CMD ["sh", "-c", "corepack pnpm db:migrate && corepack pnpm start"]
