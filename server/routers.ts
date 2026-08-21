@@ -328,7 +328,16 @@ export const appRouter = router({
           if (!hasValidFileSignature(bytes, input.mimeType)) throw new TRPCError({ code: "BAD_REQUEST", message: "نوع الملف لا يطابق محتواه الفعلي." });
           if (input.mimeType.startsWith("image/")) {
             const moderation = await checkMedia(input.base64, input.mimeType);
-            await db.createModerationCheck({ userId: ctx.user.id, contentType: input.kind === "product" ? "product" : input.kind === "message" ? "message" : input.kind === "group" ? "groupPost" : input.kind === "story" ? "story" : input.kind === "reel" ? "reel" : "post", contentId: -1, contentPreview: input.fileName.slice(0, 180), verdict: moderation.verdict, categories: moderation.categories.join(" | "), confidence: Math.round(moderation.confidence * 100), actionTaken: moderation.shouldBlock ? "blocked" : "allowed" }).catch(() => undefined);
+            await db.createModerationCheck({
+              userId: ctx.user.id,
+              contentType: input.kind === "product" ? "product" : input.kind === "message" ? "message" : input.kind === "group" ? "groupPost" : input.kind === "story" ? "story" : input.kind === "reel" ? "reel" : "post",
+              contentId: -1,
+              contentPreview: input.fileName.slice(0, 180),
+              verdict: moderation.verdict,
+              categories: moderation.categories.join(" | "),
+              confidence: Math.round(moderation.confidence * 100),
+              actionTaken: moderation.shouldBlock ? "blocked" : moderation.categories.includes("ai_unavailable") ? "allowed_pending_review" : "allowed",
+            }).catch(() => undefined);
             if (moderation.shouldBlock) throw new TRPCError({ code: "BAD_REQUEST", message: `تعذر رفع الصورة: ${moderation.reason}` });
           }
           const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");

@@ -218,8 +218,18 @@ export async function checkMedia(base64: string, mimeType: string): Promise<Mode
     const shouldBlock = verdict === "sexual" || verdict === "harmful" || (verdict === "nsfw" && confidence > 0.85) || Boolean(parsed.shouldBlock);
     return { verdict, categories: Array.isArray(parsed.categories) ? parsed.categories.map(String) : [], confidence, shouldBlock, reason: String(parsed.reason ?? "") };
   } catch (error) {
-    console.error("[aiModeration] fail-closed image moderation", String((error as Error)?.message));
-    return { verdict: "harmful", categories: ["ai_unavailable", "requires_review"], confidence: 0, shouldBlock: true, reason: "تعذر فحص الصورة آليًا؛ أعد المحاولة لاحقًا." };
+    const message = String((error as Error)?.message ?? error);
+    console.error("[aiModeration] vision moderation unavailable; allowing upload with audit flag", message);
+
+    // لا نعطّل رفع الصور السليمة لمجرد تعطل مزود الفحص.
+    // يبقى الحكم مسجّلًا كـ ai_unavailable ويمكن للمراجعة الدورية التعامل معه.
+    return {
+      verdict: "safe",
+      categories: ["ai_unavailable", "requires_review"],
+      confidence: 0,
+      shouldBlock: false,
+      reason: "تعذر الفحص الآلي مؤقتًا؛ تم السماح بالرفع مع وضع علامة للمراجعة.",
+    };
   }
 }
 

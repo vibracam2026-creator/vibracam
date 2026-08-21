@@ -56,7 +56,8 @@ export function MediaUploader({ kind, accept = "image/*", onUploaded, label = "�
       }
       onUploaded({ url: result.url, key: result.key, type: isVideo ? "video" : file.type.startsWith("audio/") ? "audio" : "image" });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر رفع الملف.");
+      const message = error instanceof Error ? error.message : "تعذر رفع الملف.";
+      toast.error(message || "تعذر رفع الملف. تحقق من التخزين واتصال الخادم ثم أعد المحاولة.");
     } finally {
       setLoading(false);
       setProgress(0);

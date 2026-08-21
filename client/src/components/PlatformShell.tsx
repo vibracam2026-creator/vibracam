@@ -43,6 +43,7 @@ export function PlatformShell({ children }: { children: ReactNode }) {
     { href: "/reels", label: t("reels"), icon: Video },
   ];
   const moreLinks = [
+    ...(user?.role === "admin" ? [{ href: "/admin", label: "الإدارة", icon: Settings }] : []),
     { href: "/marketplace", label: t("marketplace"), icon: ShoppingBag },
     { href: "/live", label: t("live"), icon: Radio },
     { href: "/spaces", label: t("spaces"), icon: Mic },
@@ -88,6 +89,9 @@ export function PlatformShell({ children }: { children: ReactNode }) {
               {/* مبدّل اللغة */}
               <button className="hidden h-9 w-9 place-items-center rounded-xl soft-button text-xs font-bold lg:grid lg:h-10 lg:w-10" aria-label={t("language")} onClick={() => setLang(lang === "ar" ? "en" : "ar")}>{lang === "ar" ? "EN" : "ع"}</button>
               <button className="hidden h-9 w-9 place-items-center rounded-xl soft-button lg:grid lg:h-10 lg:w-10" aria-label={t("settings")} title={t("settings")} onClick={() => setLocation("/account-center")}><Settings size={16}/></button>
+              {user?.role === "admin" && (
+                <button className="hidden h-9 w-9 place-items-center rounded-xl soft-button xl:grid" aria-label="الإدارة" title="الإدارة" onClick={() => setLocation("/admin")}><Users size={16}/></button>
+              )}
               <button className="hidden h-9 w-9 place-items-center rounded-xl soft-button lg:grid" aria-label={t('الأجهزةوالجلسات')} onClick={() => setLocation("/settings/sessions")}><Laptop size={16}/></button>
               <button className="hidden h-9 w-9 place-items-center rounded-xl soft-button xl:grid" aria-label={t("logout")} onClick={exit}><LogOut size={16}/></button>
             </> : <button onClick={() => setLocation("/login")} className="rounded-xl px-3 py-2 text-sm font-bold gradient-button">{t("login")}</button>}
